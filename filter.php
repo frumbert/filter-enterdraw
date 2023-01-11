@@ -29,25 +29,41 @@ defined('MOODLE_INTERNAL') || die();
 
 class filter_enterdraw extends moodle_text_filter {
 
-    // currently support 16 replacements
     public function filter($text, array $options = array()) {
     global $COURSE, $PAGE, $OUTPUT, $CFG;
 
-        $start = preg_quote('[[ENTERDRAW:START]]');
-        $middle = preg_quote('[[ENTERDRAW:ELSE]]');
-        $end = preg_quote('[[ENTERDRAW:END]]');
-        $action = '/\[\[ENTERDRAW:BUTTON[^[](.*)\]\]/';
-        $expr = "/(.*){$start}(.*){$middle}(.*){$end}(.*)/";
+        // consume and remove draw data blocks
+        $blocknames = ['TOTAL','OPEN','CLOSED','ENTERED'];
+        $blocks = [];
+        foreach ($blocknames as $block) {
+            $begin = '\[\[ENTERDRAW\:' . $block . '\]\]';
+            $end = '\[\[\/ENTERDRAW\:' . $block . '\]\]';
+            $expr = "/{$begin}(.*){$end}/";
+            if (preg_match_all($expr, $text, $matches)) {
+                $blocks[$block] = $matches[1][0];
+                $text = preg_replace($expr, '', $text);
+            }
+        }
 
-        preg_match($expr, $text, $matches);
-        if (empty($matches)) return $text;
+        if (count($blocks) === 0) return $text;
+
+        // there might be leftover empty paragraph markers
+        $text = preg_replace('/<p(\s.*?)?><\/p>/', '', $text);
 
         $modinfo = get_fast_modinfo($COURSE);
         $cminfo = $modinfo->get_cm($PAGE->cm->id);
         $prefname = "enterdraw-course:{$COURSE->id}-mod:{$cminfo->id}";
 
+        // has the draw closed?
+        $closed = false;
+        $total = intval($blocks['TOTAL']);
+        $used = $this->count_prefs($prefname);
+        if ($total > 0 && $used >= $total) {
+            $closed = true;
+        }
+
         // did we post back?
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!$closed && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $postparam = optional_param('id',0,PARAM_INT);
             if ($postparam > 0 && confirm_sesskey()) {
                 require_once($CFG->dirroot.'/filter/enterdraw/classes/event_submitted.php');
@@ -60,22 +76,35 @@ class filter_enterdraw extends moodle_text_filter {
             }
         }
 
+        $entered = false;
         $preference = get_user_preferences($prefname);
-
-        $find = stripslashes("{$start}{$matches[2]}{$middle}{$matches[3]}{$end}");
-        if (empty($preference)) {
-            $replace = $matches[2];
-            preg_match($action, $replace, $button);
-
-            $form = $OUTPUT->single_button($PAGE->url, $button[1], 'post', ['class'=>'enterdraw']);
-            
-            $replace = preg_replace($action, $form, $replace);
-        } else {
-            $replace = $matches[3];
+        if (!empty($preference)) {
+            $entered = true;
         }
 
-        $text = str_replace($find, $replace, $text);
+        // figure out which block to draw
+        $display = '';
+        if ($closed) {
+            $display = $blocks['CLOSED'];
+        } else if ($entered) {
+            $display = $blocks['ENTERED'];
+        } else {
+            $display = $blocks['OPEN'];
+            $button = '/\[\[ENTERDRAW:BUTTON[^[](.*)\]\]/';
+            preg_match($button, $display, $matches);
+            $form = $OUTPUT->single_button($PAGE->url, $matches[1], 'post', ['class'=>'enterdraw']);
+            $display = preg_replace($button, $form, $display);
+        }
+
+        // display the block at the expected output location
+        $text = str_replace('[[ENTERDRAW:OUTPUT]]', $display, $text);
         return $text;
+
+    }
+
+    private function count_prefs($name) {
+    global $DB;
+        return $DB->count_records_select('user_preferences', 'name=:n', ['n' => $name]);
     }
 
 
