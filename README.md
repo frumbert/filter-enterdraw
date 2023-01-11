@@ -14,25 +14,25 @@ You have to first define the content to choose
 
 Probably best used inside a html block or a page activity. Enable the filter on the page or context as appropriate, then in the content put in some markers to tell the filter where to draw the form.
 
-The appropriate response will be shown at the location of the `[[ENTERDRAW:OUTPUT]]` marker, all other blocks are removed from the input text.
+The appropriate response will be shown at the location of the [[ENTERDRAW:OUTPUT]] marker, all other blocks are removed from the input text.
 
 ```
 html can go here before if you like
 
-`[[ENTERDRAW:OPEN]]`Put in the html you want to appear when the button hasn't been pushed
+[[ENTERDRAW:OPEN]]Put in the html you want to appear when the button hasn't been pushed
 
-`[[ENTERDRAW:BUTTON ` The button text `]]`
-`[[/ENTERDRAW:OPEN]]`
+[[ENTERDRAW:BUTTON The button text]]
+[[/ENTERDRAW:OPEN]]
 
-`[[ENTERDRAW:CLOSED]]`The html to show when the draw is closed`[[/ENTERDRAW:CLOSED]]`
+[[ENTERDRAW:CLOSED]]The html to show when the draw is closed[[/ENTERDRAW:CLOSED]]
 
-`[[ENTERDRAW:ENTERED]]`The html to show when the user has submitted an entry and the draw is still open.`[[/ENTERDRAW:ENTERED]]`
+[[ENTERDRAW:ENTERED]]The html to show when the user has submitted an entry and the draw is still open.[[/ENTERDRAW:ENTERED]]
 
-`[[ENTERDRAW:TOTAL]]`99`[[/ENTERDRAW:TOTAL]]`
+[[ENTERDRAW:TOTAL]]99[[/ENTERDRAW:TOTAL]]
 
 Your vote counts! Get your socks on, it's going to be a wild ride.
 
-`[[ENTERDRAW:OUTPUT]]`
+[[ENTERDRAW:OUTPUT]]
 
 html can go here too
 
